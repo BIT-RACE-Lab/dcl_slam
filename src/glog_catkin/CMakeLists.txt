@@ -35,15 +35,25 @@ if(USE_SYSTEM_GLOG STREQUAL "OFF")
   file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
 
   set(VERSION 0.3.5)
+  set(GLOG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/glog"
+      CACHE PATH "Path to the local glog source tree")
+
+  if(NOT EXISTS "${GLOG_SOURCE_DIR}/configure")
+    message(FATAL_ERROR
+      "glog source was not found at: ${GLOG_SOURCE_DIR}\n"
+      "Populate src/glog_catkin/third_party/glog, then rebuild.")
+  endif()
+
   ExternalProject_Add(glog_src
-    URL https://github.com/google/glog/archive/v${VERSION}.zip
+    SOURCE_DIR "${GLOG_SOURCE_DIR}"
+    DOWNLOAD_COMMAND ""
     UPDATE_COMMAND ""
-    PATCH_COMMAND patch -p0 < ${CMAKE_CURRENT_SOURCE_DIR}/fix-unused-typedef-warning.patch
-    CONFIGURE_COMMAND cd ../glog_src/ && autoreconf -fi && ./configure --with-pic
+    # The vendored source already contains fix-unused-typedef-warning.patch.
+    CONFIGURE_COMMAND ${GLOG_SOURCE_DIR}/configure --with-pic
       --with-gflags=${gflags_catkin_PREFIX}
       --prefix=${CATKIN_DEVEL_PREFIX}
-    BUILD_COMMAND cd ../glog_src/ && make -j 8
-    INSTALL_COMMAND cd ../glog_src/ && make install -j 8
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
   )
 
   install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/include/glog

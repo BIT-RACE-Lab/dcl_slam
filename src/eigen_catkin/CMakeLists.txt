@@ -83,11 +83,17 @@ if(USE_SYSTEM_EIGEN)
 else()
   message(STATUS "eigen_catkin is configured NOT to use system eigen")
   file(MAKE_DIRECTORY ${EIGEN_CATKIN_EIGEN_INCLUDE})
+  set(EIGEN_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/eigen" CACHE PATH "Path to the local Eigen source tree")
+  if(NOT EXISTS "${EIGEN_SOURCE_DIR}/CMakeLists.txt")
+    message(FATAL_ERROR "Eigen source was not found at: ${EIGEN_SOURCE_DIR}")
+  endif()
   ExternalProject_Add(eigen_src
+    SOURCE_DIR "${EIGEN_SOURCE_DIR}"
+    DOWNLOAD_COMMAND ""
     UPDATE_COMMAND ""
-    URL http://bitbucket.org/eigen/eigen/get/3.2.10.tar.bz2
-    PATCH_COMMAND patch -p0 < ${CMAKE_CURRENT_SOURCE_DIR}/StdVector.patch
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX}  -DCMAKE_BUILD_TYPE:STRING=Release
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX} -DCMAKE_BUILD_TYPE:STRING=Release
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
   )
 
   if(EXISTS ${EIGEN_CATKIN_EIGEN_INCLUDE_SIGNATURE}.off)

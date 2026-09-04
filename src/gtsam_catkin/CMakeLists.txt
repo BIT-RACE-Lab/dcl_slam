@@ -7,15 +7,37 @@ catkin_simple()
 
 include(ExternalProject)
 file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
+
+# GTSAM is vendored with this workspace to keep builds independent of external
+# network access. The directory must contain commit
+# 687ae3d2511b9c296af08ec2f2e717b0627a8d68, including its CMakeLists.txt.
+set(GTSAM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gtsam"
+    CACHE PATH "Path to the local GTSAM source tree")
+
+if(NOT EXISTS "${GTSAM_SOURCE_DIR}/CMakeLists.txt")
+  message(FATAL_ERROR
+    "GTSAM source was not found at: ${GTSAM_SOURCE_DIR}\n"
+    "Populate src/gtsam_catkin/third_party/gtsam with commit "
+    "687ae3d2511b9c296af08ec2f2e717b0627a8d68, then rebuild.\n"
+    "To use another local path, configure: "
+    "catkin config --cmake-args -DGTSAM_SOURCE_DIR=/absolute/path/to/gtsam")
+endif()
+
 ExternalProject_Add(gtsam_src
-  GIT_REPOSITORY https://bitbucket.org/gtborg/gtsam.git
-  GIT_TAG 687ae3d2511b9c296af08ec2f2e717b0627a8d68
+  SOURCE_DIR "${GTSAM_SOURCE_DIR}"
+  DOWNLOAD_COMMAND ""
   UPDATE_COMMAND ""
-  PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/use_catkinized_metis.patch &&
-                patch -p1 < ${CMAKE_SOURCE_DIR}/fix_warnings.patch
-  CONFIGURE_COMMAND cmake -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX} -DGTSAM_USE_SYSTEM_EIGEN=ON
-  -DCMAKE_BUILD_TYPE=Release ../gtsam_src
-  BUILD_COMMAND make -j2
+  # The vendored GTSAM source already contains use_catkinized_metis.patch and
+  # fix_warnings.patch. Do not apply them again: patch would wait for input
+  # when a package build is cleaned and restarted.
+  CONFIGURE_COMMAND ${CMAKE_COMMAND}
+  -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX}
+  -DGTSAM_USE_SYSTEM_EIGEN=ON
+  -DCMAKE_BUILD_TYPE=Release
+  "${GTSAM_SOURCE_DIR}"
+  # Inherit catkin_tools GNU Make jobserver tokens (configured via `catkin config -j`).
+  # Do not force a private -j value here, which would oversubscribe or underuse CPUs.
+  BUILD_COMMAND $(MAKE)
   INSTALL_COMMAND make install
 )
 

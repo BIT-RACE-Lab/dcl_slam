@@ -8,20 +8,29 @@ include(ExternalProject)
 
 file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
 
+set(GFLAGS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gflags"
+    CACHE PATH "Path to the local gflags source tree")
+
+if(NOT EXISTS "${GFLAGS_SOURCE_DIR}/CMakeLists.txt")
+  message(FATAL_ERROR
+    "gflags source was not found at: ${GFLAGS_SOURCE_DIR}\n"
+    "Populate src/gflags_catkin/third_party/gflags, then rebuild.")
+endif()
+
 ExternalProject_Add(
   gflags_src
-  URL https://github.com/gflags/gflags/archive/v2.2.1.zip
-  URL_MD5 2d988ef0b50939fb50ada965dafce96b
+  SOURCE_DIR "${GFLAGS_SOURCE_DIR}"
+  DOWNLOAD_COMMAND ""
   UPDATE_COMMAND ""
-  CONFIGURE_COMMAND cd ../gflags_src &&
-     cmake .
-       -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX}
-       -DBUILD_SHARED_LIBS:BOOL=true
-       -DGFLAGS_NAMESPACE:STRING=google
-       -DCMAKE_BUILD_TYPE:STRING=Release
-       -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
-  BUILD_COMMAND cd ../gflags_src && make -j 8
-  INSTALL_COMMAND cd ../gflags_src && make install -j 8
+  CMAKE_ARGS
+    -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX}
+    -DBUILD_SHARED_LIBS:BOOL=true
+    -DGFLAGS_NAMESPACE:STRING=google
+    -DCMAKE_BUILD_TYPE:STRING=Release
+    -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
+  # Share catkin_tools' GNU Make jobserver instead of forcing make -j 8.
+  BUILD_COMMAND $(MAKE)
+  INSTALL_COMMAND $(MAKE) install
 )
 
 install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/include/gflags

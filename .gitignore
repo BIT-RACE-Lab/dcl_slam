@@ -1,3 +1,8 @@
+# 已内置的第三方源码必须纳入顶层 Git。
+# 请将依赖源码放在 src/<package>/third_party/，不要放在 build/。
+!src/**/third_party/
+!src/**/third_party/**
+
 # ROS / catkin 工作区生成内容
 /build/
 /devel/

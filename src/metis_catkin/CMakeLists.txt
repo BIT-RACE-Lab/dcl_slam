@@ -8,8 +8,11 @@ include(ExternalProject)
 
 file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
 
-set(METIS_URL https://github.com/ethz-asl/thirdparty_library_binaries/raw/master/metis-5.1.0.tar.gz)
-set(METIS_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX} -DCMAKE_BUILD_TYPE:STRING=Release -DSHARED:BOOL=TRUE -DGKLIB_PATH:STRING=${CMAKE_CURRENT_BINARY_DIR}/metis_src-prefix/src/metis_src/GKlib)
+set(METIS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/metis" CACHE PATH "Path to the local METIS source tree")
+if(NOT EXISTS "${METIS_SOURCE_DIR}/CMakeLists.txt")
+  message(FATAL_ERROR "METIS source was not found at: ${METIS_SOURCE_DIR}")
+endif()
+set(METIS_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX} -DCMAKE_BUILD_TYPE:STRING=Release -DSHARED:BOOL=TRUE -DGKLIB_PATH:STRING=${METIS_SOURCE_DIR}/GKlib)
 
 # The following logic addresses a potential Xcode bug.
 # It is documented at
@@ -19,15 +22,21 @@ set(METIS_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CATKIN_DEVEL_PREFIX} -DCMAKE_
 if( (CMAKE_C_COMPILER MATCHES "(.*)Xcode(.*)") AND (CMAKE_C_COMPILER_VERSION MATCHES "7.3(.*)") )
   message("Use of XCode infeasible due to potential compiler bug. Switching to gcc.")
   ExternalProject_Add(metis_src
-    URL ${METIS_URL}
+    SOURCE_DIR "${METIS_SOURCE_DIR}"
+    DOWNLOAD_COMMAND ""
     UPDATE_COMMAND ""
     CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/gcc.cmake ${METIS_CMAKE_ARGS}
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
   )
 else() 
   ExternalProject_Add(metis_src
-    URL ${METIS_URL}
+    SOURCE_DIR "${METIS_SOURCE_DIR}"
+    DOWNLOAD_COMMAND ""
     UPDATE_COMMAND ""
     CMAKE_ARGS ${METIS_CMAKE_ARGS} 
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
   ) 
 endif()
 
