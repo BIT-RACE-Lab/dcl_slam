@@ -56,6 +56,21 @@ if(USE_SYSTEM_GLOG STREQUAL "OFF")
     INSTALL_COMMAND $(MAKE) install
   )
 
+  # A fresh Git checkout gives the source files new timestamps. In glog 0.3.5
+  # this can make Automake try to regenerate configure/aclocal.m4 during make,
+  # which requires the obsolete aclocal-1.14. These files are shipped with the
+  # vendored release and must be used as-is for an offline build.
+  ExternalProject_Add_Step(glog_src prevent_autoreconf
+    COMMAND ${CMAKE_COMMAND} -E touch
+      ${GLOG_SOURCE_DIR}/aclocal.m4
+      ${GLOG_SOURCE_DIR}/configure
+      ${GLOG_SOURCE_DIR}/Makefile.in
+      ${GLOG_SOURCE_DIR}/src/config.h.in
+    DEPENDEES configure
+    DEPENDERS build
+    ALWAYS 1
+  )
+
   install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/include/glog
           DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
           FILES_MATCHING PATTERN "*.h")
