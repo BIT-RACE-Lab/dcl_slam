@@ -1,0 +1,47 @@
+# ROS / catkin 工作区生成内容
+/build/
+/devel/
+/install/
+/logs/
+/.catkin_tools/
+
+# wstool 自动生成的依赖清单及备份
+**/.rosinstall
+**/.rosinstall.bak
+
+# # Livox ROS1 当前使用的包清单（其上游 .gitignore 默认将其排除）
+# !src/livox_ros_driver2/package.xml
+
+# # ROS 运行时与数据记录（数据集请放在仓库外，或使用 Git LFS 单独管理）
+# *.bag
+# *.db3
+# *.mcap
+# *.pcap
+# *.pcd
+
+# # 编译与 Python 缓存
+# *.py[cod]
+# __pycache__/
+# *.so
+# *.o
+# *.a
+# *.la
+# *.dylib
+# *.dll
+# *.exe
+
+# # IDE、编辑器与操作系统文件
+# .vscode/
+# .idea/
+# *.swp
+# *.swo
+# *~
+# .DS_Store
+# Thumbs.db
+
+# # 本机环境、密钥与临时日志
+# .env
+# .env.*
+# !.env.example
+# *.log
+# *.tmp
