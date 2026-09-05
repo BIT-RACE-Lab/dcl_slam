@@ -15,8 +15,8 @@
 
 ## 环境要求
 
-- Ubuntu 18.04 或 20.04
-- ROS 1（分别推荐 Melodic 或 Noetic）
+- Ubuntu 20.04
+- ROS 1 Noetic
 - CMake、Git、`catkin_tools`
 - Boost、PCL、Eigen、OpenCV、Python 开发库
 - [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2)：需按官方说明单独安装。当前 ROS1 驱动会从 `/usr/local/lib` 查找 `liblivox_lidar_sdk_static.a`。
@@ -34,10 +34,10 @@ sudo apt install cmake git python3-catkin-tools libboost-all-dev \
 ## 获取与构建
 
 ```bash
-git clone <仓库地址> cslam_ws
-cd cslam_ws
+git clone git@github.com:BIT-Jiang-Group/dcl_slam.git
+cd dcl_slam
 
-source /opt/ros/noetic/setup.bash   # Melodic 请替换为 /opt/ros/melodic/setup.bash
+source /opt/ros/noetic/setup.bash
 catkin init
 catkin config --merge-devel
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release -DROS_EDITION=ROS1
@@ -97,7 +97,7 @@ unset ROS_HOSTNAME
 
 ```bash
 source /opt/ros/noetic/setup.bash
-source <工作区路径>/devel/setup.bash
+source ./devel/setup.bash
 ```
 
 先在 1 号车确保 ROS master 已启动：
@@ -122,8 +122,7 @@ roslaunch livox_ros_driver2 msg_MID360.launch robotPrefix:=b
 roslaunch dcl_slam single_ugv.launch robotPrefix:=b number_of_robots:=2
 ```
 
-`single_ugv.launch` 默认使用 `lioType:=2`，即 FAST-LIO；它启动的是当前车辆命名空间下的 LIO 前端。若使用 LIO-SAM 前端，可传入 `lioType:=1`，并为每辆车准备对应的 `dcl_lio_sam_vlp16_params_<前缀>.yaml` 参数文件。
-
+`single_ugv.launch` 默认使用 `lioType:=2`，即 FAST-LIO；它启动的是当前车辆命名空间下的 LIO 前端。
 
 ## 致谢
 
