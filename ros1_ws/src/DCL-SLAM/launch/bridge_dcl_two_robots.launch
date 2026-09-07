@@ -1,0 +1,5 @@
+<launch>
+    <!-- Load only DCL cross-robot topics into this robot's local ROS1 master.
+         Start parameter_bridge in a second terminal after loading this file. -->
+    <rosparam file="$(find dcl_slam)/config/bridge_dcl_two_robots.yaml"/>
+</launch>

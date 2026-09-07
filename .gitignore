@@ -1,7 +1,7 @@
 # 已内置的第三方源码必须纳入顶层 Git。
-# 请将依赖源码放在 src/<package>/third_party/，不要放在 build/。
-!src/**/third_party/
-!src/**/third_party/**
+# 请将依赖源码放在 ros1_ws/src/<package>/third_party/，不要放在 build/。
+!ros1_ws/src/**/third_party/
+!ros1_ws/src/**/third_party/**
 
 # ROS / catkin 工作区生成内容
 /build/
@@ -9,13 +9,21 @@
 /install/
 /logs/
 /.catkin_tools/
+/ros1_ws/build/
+/ros1_ws/devel/
+/ros1_ws/install/
+/ros1_ws/logs/
+/ros1_ws/.catkin_tools/
+/ros2_ws/build/
+/ros2_ws/install/
+/ros2_ws/log/
 
 # wstool 自动生成的依赖清单及备份
 **/.rosinstall
 **/.rosinstall.bak
 
 # # Livox ROS1 当前使用的包清单（其上游 .gitignore 默认将其排除）
-# !src/livox_ros_driver2/package.xml
+# !ros1_ws/src/livox_ros_driver2/package.xml
 
 # # ROS 运行时与数据记录（数据集请放在仓库外，或使用 Git LFS 单独管理）
 # *.bag

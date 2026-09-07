@@ -1,0 +1,14 @@
+- ros1_package_name: dcl_slam
+  ros1_message_name: global_descriptor
+  ros2_package_name: dcl_slam_msgs
+  ros2_message_name: GlobalDescriptor
+
+- ros1_package_name: dcl_slam
+  ros1_message_name: loop_info
+  ros2_package_name: dcl_slam_msgs
+  ros2_message_name: LoopInfo
+
+- ros1_package_name: dcl_slam
+  ros1_message_name: neighbor_estimate
+  ros2_package_name: dcl_slam_msgs
+  ros2_message_name: NeighborEstimate

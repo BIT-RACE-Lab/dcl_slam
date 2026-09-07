@@ -1,0 +1,19 @@
+# DCL-only ROS1 <-> ROS2 transport for robots a and b.
+# Local sensor streams, maps, global outputs, TF and commands are deliberately
+# absent: each robot keeps those on its own ROS1 master.
+topics:
+  - {topic: /a/distributedMapping/globalDescriptors, type: dcl_slam_msgs/msg/GlobalDescriptor, queue_size: 10, transient_local: true}
+  - {topic: /b/distributedMapping/globalDescriptors, type: dcl_slam_msgs/msg/GlobalDescriptor, queue_size: 10, transient_local: true}
+  - {topic: /a/distributedMapping/loopInfo, type: dcl_slam_msgs/msg/LoopInfo, queue_size: 10}
+  - {topic: /b/distributedMapping/loopInfo, type: dcl_slam_msgs/msg/LoopInfo, queue_size: 10}
+
+  - {topic: /a/distributedMapping/optimizationState, type: std_msgs/msg/Int8, queue_size: 50}
+  - {topic: /b/distributedMapping/optimizationState, type: std_msgs/msg/Int8, queue_size: 50}
+  - {topic: /a/distributedMapping/rotationEstimateState, type: std_msgs/msg/Int8, queue_size: 50}
+  - {topic: /b/distributedMapping/rotationEstimateState, type: std_msgs/msg/Int8, queue_size: 50}
+  - {topic: /a/distributedMapping/poseEstimateState, type: std_msgs/msg/Int8, queue_size: 50}
+  - {topic: /b/distributedMapping/poseEstimateState, type: std_msgs/msg/Int8, queue_size: 50}
+  - {topic: /a/distributedMapping/neighborRotationEstimates, type: dcl_slam_msgs/msg/NeighborEstimate, queue_size: 50}
+  - {topic: /b/distributedMapping/neighborRotationEstimates, type: dcl_slam_msgs/msg/NeighborEstimate, queue_size: 50}
+  - {topic: /a/distributedMapping/neighborPoseEstimates, type: dcl_slam_msgs/msg/NeighborEstimate, queue_size: 50}
+  - {topic: /b/distributedMapping/neighborPoseEstimates, type: dcl_slam_msgs/msg/NeighborEstimate, queue_size: 50}
