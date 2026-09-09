@@ -17,7 +17,7 @@ dcl_slam: {
   keyframe_distance_threshold: 1.0,       # keyframe distance threshold (in meter)
   keyframe_angle_threshold: 0.2,          # keyframe angle threshold (in rad)
   startup_multi_frame_enable: true,       # 静止启动时按时间强制采集多帧
-  startup_keyframe_count: 60,             # 3 个互不重叠的 20 帧子图，约 6 秒完成
+  startup_keyframe_count: 120,             # 3 个互不重叠的 20 帧子图，约 6 秒完成
   startup_accumulation_frames: 20,        # MID-360 每个子图连续累计约 2 秒扫描
   startup_keyframe_interval: 0.08,        # 略低于 10Hz 周期，避免因时间抖动漏掉隔帧
 

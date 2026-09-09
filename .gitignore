@@ -17,6 +17,7 @@
 /ros2_ws/build/
 /ros2_ws/install/
 /ros2_ws/log/
+/ros2_ws/.colcon/
 
 # wstool 自动生成的依赖清单及备份
 **/.rosinstall
@@ -32,9 +33,9 @@
 # *.pcap
 # *.pcd
 
-# # 编译与 Python 缓存
-# *.py[cod]
-# __pycache__/
+# 编译与 Python 缓存
+*.py[cod]
+__pycache__/
 # *.so
 # *.o
 # *.a
@@ -43,11 +44,11 @@
 # *.dll
 # *.exe
 
-# # IDE、编辑器与操作系统文件
-# .vscode/
-# .idea/
-# *.swp
-# *.swo
+# IDE、编辑器与操作系统文件
+.vscode/
+.idea/
+*.swp
+*.swo
 # *~
 # .DS_Store
 # Thumbs.db

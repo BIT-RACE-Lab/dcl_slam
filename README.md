@@ -12,15 +12,17 @@
 | `ros1_ws/src/distributed_mapper` | 分布式图优化与一致性筛选 |
 | `ros1_ws/src/*_catkin`、`ros1_ws/src/libnabo` | ROS1 构建所需的第三方依赖源码 |
 | `ros2_ws/src/dcl_slam_msgs` | DCL 自定义消息的 ROS2 镜像及 ros1_bridge 映射规则 |
+| `config/fastdds_wifi.xml` | 实车双机 Fast DDS 无线网卡白名单与固定节点发现配置 |
 | `scripts/build.sh` | 统一构建 ROS1 算法工作区和 ROS2 消息镜像 |
-| `ros1_ws/{build,devel,logs}` | catkin 自动生成内容，不纳入 Git |
-| `ros2_ws/{build,install,log}` | colcon 自动生成内容，不纳入 Git |
+| `scripts/build_ros1_bridge.sh` | 编译定制版 ros1_bridge（自定义消息或映射规则变更时执行） |
+| `scripts/run_robot.sh` | 一键启动单车 ROS master、DDS bridge、Livox 驱动和 DCL-SLAM |
 
 ## 环境要求
 
 - Ubuntu 20.04
 - ROS 1 Noetic
 - ROS 2 Foxy、`colcon`（只在使用 DDS 跨车传输时需要）
+- [ros1_bridge](https://github.com/BIT-Jiang-Group/ros1_bridge) 项目定制版（只在使用 ROS1/ROS2 bridge 时需要），请将它克隆到 `dcl_slam` 的同级目录
 - CMake、Git、`catkin_tools`
 - Boost、PCL、Eigen、OpenCV、Python 开发库
 - [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2)：需按官方说明单独安装。当前 ROS1 驱动会从 `/usr/local/lib` 查找 `liblivox_lidar_sdk_static.a`。
@@ -36,6 +38,8 @@ sudo apt install cmake git python3-catkin-tools libboost-all-dev \
 > ROS 的安装方式与系统版本相关，请先完成 [ROS Melodic](https://wiki.ros.org/melodic/Installation) 或 [ROS Noetic](https://wiki.ros.org/noetic/Installation) 安装。Livox-SDK2 不包含在本仓库内，必须在每台连接 MID360 的机器上单独安装。
 
 ## 获取与构建
+
+### 本体
 
 ```bash
 git clone git@github.com:BIT-Jiang-Group/dcl_slam.git
@@ -55,6 +59,47 @@ ROS1 工作区使用 Release 模式和合并式 `devel` 空间。构建默认使
 ./scripts/build.sh --ros1-only -j 2
 ```
 
+### ros1_bridge 依赖
+
+系统安装的原版 `ros1_bridge` 不包含 DCL 自定义消息转换，也不包含本项目所需的参数化话题列表、`transient_local`/ROS1 latch 和双向回环抑制。请使用项目定制仓库，并让它与 `dcl_slam` 保持同级目录：
+
+```text
+├── dcl_slam/
+└── ros1_bridge/
+```
+
+首次获取与构建（**要求`dcl_slam`以编译完成**）：
+
+```bash
+git clone https://github.com/BIT-Jiang-Group/ros1_bridge.git
+
+cd dcl_slam
+
+# ros1_bridge 必须在两边自定义消息环境都可见时编译
+./scripts/build_ros1_bridge.sh
+```
+
+`build_ros1_bridge.sh` 会自动加载 ROS1/ROS2 环境并执行 `colcon build`（`--symlink-install`、`--cmake-force-configure`、Release）。如需限制并行编译任务数，可加 `-j <数量>`：
+
+```bash
+./scripts/build_ros1_bridge.sh -j 4
+```
+
+ros1_bridge 默认从 `dcl_slam` 的同级目录查找，也可以通过 `ROS1_BRIDGE_ROOT` 指定其它位置：
+
+```bash
+ROS1_BRIDGE_ROOT=/path/to/ros1_bridge ./scripts/build_ros1_bridge.sh
+```
+
+只有在首次构建、修改 ROS1/ROS2 `.msg`、修改 `mapping_rules.yaml` 或更换 ROS 版本后，才需要重新编译 `ros1_bridge`。普通 DCL 算法、launch 或运行参数修改不需要重编 bridge。
+
+构建完成后检查 DCL 转换是否已经生成：
+
+```bash
+source ../ros1_bridge/install/local_setup.bash
+ros2 run ros1_bridge dynamic_bridge --print-pairs | grep dcl_slam
+```
+
 ## 双车网络与 MID360 配置
 
 两台车须能通过无线网络互相访问；每台车的 MID360 使用本机有线网卡通信。以下为示例地址：
@@ -68,103 +113,44 @@ ROS1 工作区使用 Release 模式和合并式 `devel` 空间。构建默认使
 
 推荐每辆车运行独立 ROS1 Master，并通过 ROS1/ROS2 bridge 只转发 DCL 跨车消息。DCL 自带双车 bridge 参数配置；本车的点云、IMU、TF、地图和定位输出不会进入跨车网络。
 
+> 网络相关环境变量已写入启动脚本中
+
+## 实机运行
+
+### 一键启动（推荐）
+
+完成 DCL-SLAM 和 `ros1_bridge` 构建、MID360 以及 `fastdds_wifi.xml` 配置后，每辆车只需运行一个脚本。脚本会自动加载 ROS1/ROS2 环境，启动或复用本机 `roscore`，加载跨车话题列表，并按顺序启动 `parameter_bridge`、Livox 驱动和 DCL-SLAM。
+
 **1 号车：**
 
 ```bash
-export ROS_MASTER_URI=http://127.0.0.1:11311
-export ROS_IP=192.168.31.11
-export ROS_DOMAIN_ID=30
-unset ROS_HOSTNAME
+cd ~/mtare/dcl_slam
+./scripts/run_robot.sh a
 ```
 
 **2 号车：**
 
 ```bash
-export ROS_MASTER_URI=http://127.0.0.1:11311
-export ROS_IP=192.168.31.12
-export ROS_DOMAIN_ID=30
-unset ROS_HOSTNAME
+cd ~/mtare/dcl_slam
+./scripts/run_robot.sh b
 ```
 
-在每台车上修改 `ros1_ws/src/livox_ros_driver2/config/MID360_config.json`：
-
-- 将 `cmd_data_ip`、`push_msg_ip`、`point_data_ip`、`imu_data_ip` 全部设为**本机有线网卡 IP**；
-- 将 `lidar_configs[0].ip` 设为该车连接的 **MID360 IP**；
-- 端口保持默认值，除非网络环境已有端口冲突。
-
-配置完成后，请确认两台车能互相 ping 通无线网卡 IP；再确认每台车能 ping 通本机连接的 MID360 IP。
-
-## 实机运行
-
-以下步骤以两辆车、FAST-LIO 前端为例。每个新终端都需先加载环境：
+默认无线地址分别为 `192.168.31.11` 和 `192.168.31.12`，ROS 2 Domain ID 为 `30`。地址不同时可在命令行覆盖：
 
 ```bash
-source /opt/ros/noetic/setup.bash
-source ~/mtare/dcl_slam/ros1_ws/devel/setup.bash --extend
+./scripts/run_robot.sh a --ros-ip 192.168.31.21 --domain-id 30
+./scripts/run_robot.sh b --ros-ip 192.168.31.22 --domain-id 30
 ```
 
-先在每辆车上启动本机 ROS master。bridge 必须先于 DCL-SLAM 启动，避免错过启动阶段的全局描述子：
+此时也必须同步修改 `config/fastdds_wifi.xml` 中的网卡白名单和固定节点地址。按 `Ctrl-C` 会关闭脚本启动的 bridge、Livox 和 DCL-SLAM；如果脚本检测到 `roscore` 已经运行，则复用它且退出时不会关闭该 ROS master。`ros1_bridge` 默认从 `dcl_slam` 的同级目录查找，也可以通过 `ROS1_BRIDGE_ROOT` 指定其他位置：
 
 ```bash
-roscore
+ROS1_BRIDGE_ROOT=/path/to/ros1_bridge ./scripts/run_robot.sh a
 ```
 
-另开 ROS1 终端加载 DCL 自带的 14 个跨车话题配置；该 launch 加载完参数后自动退出属于正常现象：
+### 分终端启动
 
-```bash
-source /opt/ros/noetic/setup.bash
-source ~/mtare/dcl_slam/ros1_ws/devel/setup.bash --extend
-roslaunch dcl_slam bridge_dcl_two_robots.launch
-```
-
-再开一个 bridge 终端：
-
-```bash
-source /opt/ros/noetic/setup.bash
-source ~/mtare/dcl_slam/ros1_ws/devel/setup.bash --extend
-source /opt/ros/foxy/setup.bash
-source ~/mtare/dcl_slam/ros2_ws/install/local_setup.bash
-source ~/mtare/ros1_bridge/install/local_setup.bash
-ros2 run ros1_bridge parameter_bridge
-```
-
-然后分别在各车启动 Livox 驱动和本车 LIO 前端。`robotPrefix` 必须与车辆对应，且不可重复。
-
-**1 号车（前缀 `a`）：**
-
-```bash
-roslaunch livox_ros_driver2 msg_MID360.launch robotPrefix:=a
-roslaunch dcl_slam single_ugv.launch robotPrefix:=a number_of_robots:=2
-```
-
-**2 号车（前缀 `b`）：**
-
-```bash
-roslaunch livox_ros_driver2 msg_MID360.launch robotPrefix:=b
-roslaunch dcl_slam single_ugv.launch robotPrefix:=b number_of_robots:=2
-```
-
-`single_ugv.launch` 默认使用 `lioType:=2`，即 FAST-LIO；它启动的是当前车辆命名空间下的 LIO 前端。
-
-### 独立验证 DDS 跨车传输
-
-两车启动 bridge 和 DCL 后，在车 a 检查车 b 的描述子：
-
-```bash
-ros2 topic list | grep distributedMapping
-rostopic info /b/distributedMapping/globalDescriptors
-rostopic echo -n 1 /b/distributedMapping/globalDescriptors
-```
-
-预期 ROS1 信息中 `/ros_bridge` 是发布者、`/a/laserMapping` 是订阅者；DCL 日志应出现 `Received global descriptor: robot=1`。车 b 反向检查 `/a/distributedMapping/globalDescriptors`。以下本地高带宽或控制话题不应出现在 ROS2 topic 列表中：
-
-```text
-/a|b/livox/lidar
-/a|b/livox/imu
-/a|b/cloud_registered_global
-/a|b/odometry_global
-/cmd_vel
-```
+由于项目同时包含`ros1`和`ros2`，环境变量较为复杂，建议通过对脚本的部分注释实现单独功能调试
 
 ## 致谢
 

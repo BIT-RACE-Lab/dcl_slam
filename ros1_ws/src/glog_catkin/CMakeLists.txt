@@ -68,7 +68,6 @@ if(USE_SYSTEM_GLOG STREQUAL "OFF")
       ${GLOG_SOURCE_DIR}/src/config.h.in
     DEPENDEES configure
     DEPENDERS build
-    ALWAYS 1
   )
 
   install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/include/glog
