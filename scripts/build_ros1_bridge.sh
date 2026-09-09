@@ -1,44 +1,57 @@
 #!/usr/bin/env bash
+# Copyright 2026 lwb <wb.lv@qq.com>
+# SPDX-License-Identifier: Apache-2.0
+
 # =============================================================================
-# build_ros1_bridge.sh —— 编译定制版 ros1_bridge（ROS1 <-> ROS2 动态桥）。
+# Build the customized ROS 1 <-> ROS 2 dynamic bridge.
+# 构建项目定制的 ROS 1 <-> ROS 2 动态桥。
 #
-# 为什么需要单独编译 ros1_bridge
-#   ros1_bridge 的转换工厂在编译时按"当前可见的 ROS1/ROS2 自定义消息"生成，
-#   因此必须先由 ./scripts/build.sh 生成 DCL 的 ROS1(ros1_ws/devel) 与
-#   ROS2(ros2_ws/install) 消息，再让两边消息环境同时可见来编译本桥。
-#   只有在以下情况才需要（重新）执行本脚本：
-#     1) 首次构建 ros1_bridge；
-#     2) 修改了 DCL 的 ROS1/ROS2 `.msg` 并重新运行 ./scripts/build.sh；
-#     3) 修改了 ros1_bridge 的 mapping_rules.yaml；
-#     4) 更换了 ROS1/ROS2 发行版。
-#   普通 DCL 算法、launch 或运行参数修改不需要重编 bridge。
+# ros1_bridge generates conversion factories at build time from the ROS 1 and
+# ROS 2 message types currently visible. Run ./scripts/build.sh first, then use
+# this script for the initial bridge build and after changing message files,
+# mapping_rules.yaml, or either ROS distribution. Algorithm, launch-file, and
+# runtime-parameter changes do not require rebuilding the bridge.
+# ros1_bridge 会在编译时根据当前可见的 ROS 1 和 ROS 2 消息类型生成转换工厂。
+# 请先运行 ./scripts/build.sh；首次构建 bridge，以及消息文件、
+# mapping_rules.yaml 或 ROS 发行版发生变化后，再运行本脚本。仅修改算法、
+# launch 文件或运行参数时，无需重新构建 bridge。
 #
-# 前置条件
-#   - 已运行 ./scripts/build.sh，生成 DCL 的 ROS1/ROS2 消息；
-#   - 定制版 ros1_bridge 已克隆到 dcl_slam 的同级目录，或用环境变量
-#     ROS1_BRIDGE_ROOT 指定其它位置；
-#   - 已安装 ROS1/ROS2 与 colcon。
+# Prerequisites:
+#   - DCL ROS 1 and ROS 2 messages have been built with ./scripts/build.sh.
+#   - The customized ros1_bridge is next to dcl_slam, or ROS1_BRIDGE_ROOT points
+#     to another checkout.
+#   - ROS 1, ROS 2, and colcon are installed.
+# 前置条件：
+#   - 已通过 ./scripts/build.sh 构建 DCL 的 ROS 1 和 ROS 2 消息。
+#   - 定制版 ros1_bridge 位于 dcl_slam 同级目录，或 ROS1_BRIDGE_ROOT 指向
+#     其他检出目录。
+#   - 已安装 ROS 1、ROS 2 和 colcon。
 #
-# 用法: ./scripts/build_ros1_bridge.sh [选项]
-# 例  : ./scripts/build_ros1_bridge.sh
+# Usage: ./scripts/build_ros1_bridge.sh [options]
+# 用法：./scripts/build_ros1_bridge.sh [选项]
+# Examples:
+# 示例：
+#        ./scripts/build_ros1_bridge.sh
 #        ./scripts/build_ros1_bridge.sh -j 4
 #        ROS1_DISTRO=noetic ROS2_DISTRO=foxy ./scripts/build_ros1_bridge.sh
 #
-# 注意: ROS 的 setup.bash 会读取尚未定义的环境变量，不能使用 nounset（-u）。
+# ROS setup files may reference undefined variables, so nounset (-u) is disabled.
+# ROS setup 脚本可能引用未定义变量，因此不启用 nounset（-u）。
 # =============================================================================
 set -eo pipefail
 
-# ---------------- 目录路径 ----------------
-# 依据脚本自身位置推导各工作区根目录，使脚本可从任意 CWD 被调用。
+# ---------------- Paths / 路径 ----------------
+# Derive workspace paths from this file so it works from any CWD.
+# 根据脚本自身位置推导工作区路径，使其可从任意当前目录调用。
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DCL_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 ROS1_WS="${DCL_ROOT}/ros1_ws"
 ROS2_WS="${DCL_ROOT}/ros2_ws"
-# ros1_bridge 默认从 dcl_slam 的同级目录查找，路径可用环境变量覆盖
-# （与 run_robot.sh 的约定一致）。
+# Match run_robot.sh: use the sibling checkout unless the path is overridden.
+# 与 run_robot.sh 保持一致：默认使用同级目录中的 bridge，除非通过环境变量覆盖。
 ROS1_BRIDGE_ROOT="${ROS1_BRIDGE_ROOT:-$(cd -- "${DCL_ROOT}/.." && pwd)/ros1_bridge}"
 
-# ---------------- 默认参数 ----------------
+# ---------------- Defaults / 默认值 ----------------
 ROS1_DISTRO="${ROS1_DISTRO:-noetic}"
 ROS2_DISTRO="${ROS2_DISTRO:-foxy}"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
@@ -46,15 +59,15 @@ JOBS=""
 
 usage() {
     cat <<'EOF'
-用法: ./scripts/build_ros1_bridge.sh [选项]
+Usage: ./scripts/build_ros1_bridge.sh [options]
 
-前置条件：先运行 ./scripts/build.sh 生成 DCL 的 ROS1/ROS2 消息；定制版
-ros1_bridge 位于 dcl_slam 的同级目录（可用 ROS1_BRIDGE_ROOT 覆盖）。
-本脚本自动加载两边消息环境并执行 colcon build。
+Build the DCL ROS 1 and ROS 2 messages with ./scripts/build.sh first.
+The customized ros1_bridge must be next to dcl_slam unless ROS1_BRIDGE_ROOT
+points to another checkout. This script loads both environments and runs colcon.
 
-选项:
-  -j, --jobs N  并行编译任务数（不指定时使用 colcon 默认值）
-  -h, --help    显示帮助
+Options:
+  -j, --jobs N  Number of parallel build jobs (default: tool-defined)
+  -h, --help    Show this help
 EOF
 }
 
@@ -62,7 +75,7 @@ while [[ "$#" -gt 0 ]]; do
     case "$1" in
         -j|--jobs)
             if [[ "$#" -lt 2 ]]; then
-                echo "错误：选项 $1 需要一个数字参数" >&2
+                echo "Error: option $1 requires a numeric argument" >&2
                 usage >&2
                 exit 2
             fi
@@ -75,13 +88,14 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-if [[ -n "${JOBS}" ]] && ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
-    echo "错误：-j 参数必须是正整数，实际为：${JOBS}" >&2
+if [[ -n "${JOBS}" ]] && ! [[ "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: -j must be a positive integer; got: ${JOBS}" >&2
     exit 2
 fi
 
-# ---------------- 路径自检 ----------------
-# 编译前先确认关键文件存在，比编译到一半因缺文件失败更容易定位问题。
+# ---------------- Prerequisite checks / 前置检查 ----------------
+# Fail before the build if a required environment is missing.
+# 若缺少必需的环境文件，则在构建开始前立即退出。
 ROS1_SETUP="/opt/ros/${ROS1_DISTRO}/setup.bash"
 ROS2_SETUP="/opt/ros/${ROS2_DISTRO}/setup.bash"
 ROS1_WS_SETUP="${ROS1_WS}/devel/setup.bash"
@@ -91,10 +105,10 @@ BRIDGE_SRC="${ROS1_BRIDGE_ROOT}/src/ros1_bridge"
 for setup_path in "${ROS1_SETUP}" "${ROS2_SETUP}" \
     "${ROS1_WS_SETUP}" "${ROS2_WS_SETUP}"; do
     if [[ ! -f "${setup_path}" ]]; then
-        echo "错误：未找到所需文件：${setup_path}" >&2
+        echo "Error: required file not found: ${setup_path}" >&2
         case "${setup_path}" in
             *ros1_ws/devel/setup.bash|*ros2_ws/install/local_setup.bash)
-                echo "请先运行 ./scripts/build.sh 生成 DCL 的 ROS1/ROS2 消息。" >&2
+                echo "Run ./scripts/build.sh first to generate the DCL ROS 1/ROS 2 messages." >&2
                 ;;
         esac
         exit 1
@@ -102,43 +116,46 @@ for setup_path in "${ROS1_SETUP}" "${ROS2_SETUP}" \
 done
 
 if [[ ! -d "${BRIDGE_SRC}" ]]; then
-    echo "错误：未找到 ros1_bridge 源码：${BRIDGE_SRC}" >&2
-    echo "请将定制版 ros1_bridge 克隆到 dcl_slam 的同级目录，" >&2
-    echo "或用 ROS1_BRIDGE_ROOT 指定其它位置。" >&2
+    echo "Error: ros1_bridge source directory not found: ${BRIDGE_SRC}" >&2
+    echo "Clone the customized ros1_bridge next to dcl_slam or set ROS1_BRIDGE_ROOT." >&2
     exit 1
 fi
 if ! command -v colcon >/dev/null 2>&1; then
-    echo "错误：未找到 colcon，请安装 python3-colcon-common-extensions。" >&2
+    echo "Error: colcon not found; install python3-colcon-common-extensions." >&2
     exit 1
 fi
 
-# ---------------- 构建干净、可复现的 ROS 环境 ----------------
-# 脚本在子进程内执行，以下 unset/source 只影响本脚本自身，不会污染调用方
-# 终端。先彻底丢弃可能继承进来的 ROS1/ROS2/colcon 相关变量，保证从空白开始。
+# ---------------- Clean ROS environment / 清理 ROS 环境 ----------------
+# Clear inherited ROS and colcon state before loading the required environments.
+# These changes affect only this script process, not the caller's shell.
+# 在加载所需环境前清除继承的 ROS 和 colcon 状态；这些修改只影响当前脚本
+# 进程，不会改变调用者的 shell 环境。
 unset ROS_DISTRO ROS_VERSION ROS_PYTHON_VERSION ROS_PACKAGE_PATH ROS_ROOT
 unset AMENT_PREFIX_PATH COLCON_PREFIX_PATH CMAKE_PREFIX_PATH
 unset PYTHONPATH LD_LIBRARY_PATH PKG_CONFIG_PATH
 
-# 加载 ROS1 发行版与 DCL 的 ROS1 消息工作区（--extend 在已有环境上叠加，
-# 而非覆盖）。
+# Load ROS 1 and overlay the DCL ROS 1 workspace.
+# 加载 ROS 1 并叠加 DCL ROS 1 工作区。
 # shellcheck disable=SC1090
 source "${ROS1_SETUP}"
 # shellcheck disable=SC1090
 source "${ROS1_WS_SETUP}" --extend
 
-# bridge 需要 ROS1 与 ROS2 环境共存。ROS2 与 ROS1 的发行版变量冲突，
-# 先清掉 ROS_DISTRO 再 source ROS2，随后叠加 DCL 的 ROS2 消息镜像工作区。
+# Add ROS 2 and its DCL message overlay after clearing the conflicting
+# ROS_DISTRO value set by ROS 1.
+# 清除 ROS 1 设置的冲突 ROS_DISTRO 值后，再加载 ROS 2 及其 DCL 消息工作区。
 unset ROS_DISTRO
 # shellcheck disable=SC1090
 source "${ROS2_SETUP}"
 # shellcheck disable=SC1090
 source "${ROS2_WS_SETUP}"
 
-echo "[Bridge] 编译 ros1_bridge：${ROS1_BRIDGE_ROOT}"
+echo "[Bridge] Building ros1_bridge: ${ROS1_BRIDGE_ROOT}"
 cd "${ROS1_BRIDGE_ROOT}"
-# --cmake-force-configure 强制重新配置，确保转换工厂按当前消息重新生成；
-# colcon 本身没有 -j 参数（单包场景），通过 MAKEFLAGS 限制内部 make 的
-# 编译并行度。
+# Force CMake to regenerate conversion factories. Only one package is selected,
+# so MAKEFLAGS controls its internal make parallelism.
+# 强制 CMake 重新生成转换工厂。由于只构建一个包，使用 MAKEFLAGS 控制包内
+# make 的并行度。
 if [[ -n "${JOBS}" ]]; then
     MAKEFLAGS="-j${JOBS}" colcon build \
         --symlink-install \
@@ -153,4 +170,4 @@ else
         --cmake-args "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
 fi
 
-echo "ros1_bridge 构建完成。"
+echo "ros1_bridge build completed."

@@ -1,0 +1,14 @@
+DCL-SLAM
+Copyright 2026 lwb <wb.lv@qq.com>
+
+This repository integrates the DCL-SLAM ROS 1 algorithm workspace with a
+ROS 2 message-mirror workspace and adds physical two-robot deployment scripts,
+Fast DDS network configuration, and deployment documentation.
+
+The DCL-SLAM algorithm source under ros1_ws/src/DCL-SLAM and related paths is
+Copyright Shipeng Zhong and DCL-SLAM contributors and is distributed under the
+Apache License, Version 2.0. See ros1_ws/src/DCL-SLAM/LICENSE.
+
+Third-party source code bundled under ros1_ws/src, including glog, gflags,
+GTSAM, Eigen, and libnabo, retains its original copyright and license terms.
+Refer to the license and notice files in each component's source directory.

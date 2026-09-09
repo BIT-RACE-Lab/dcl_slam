@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# ROS 的 setup.bash 会读取尚未定义的环境变量，不能使用 nounset（-u）。
+# Copyright 2026 lwb <wb.lv@qq.com>
+# SPDX-License-Identifier: Apache-2.0
+
+# ROS setup files may reference undefined variables, so nounset (-u) is disabled.
+# ROS setup 脚本可能引用未定义变量，因此不启用 nounset（-u）。
 set -eo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,16 +20,16 @@ JOBS=""
 
 usage() {
     cat <<'EOF'
-用法: ./scripts/build.sh [选项]
+Usage: ./scripts/build.sh [options]
 
-选项可组合使用，例如：./scripts/build.sh --ros1-only -j 4
-默认依次构建 DCL-SLAM ROS1 工作区和 ROS2 消息镜像。
+Options may be combined, for example: ./scripts/build.sh --ros1-only -j 4
+By default, the script builds the ROS 1 workspace and ROS 2 message mirrors.
 
-选项:
-  --ros1-only  只构建 ROS1 工作区
-  --ros2-only  只构建 ROS2 消息镜像
-  -j, --jobs N 并行编译任务数（不指定时使用构建工具默认值）
-  -h, --help   显示帮助
+Options:
+  --ros1-only  Build only the ROS 1 workspace
+  --ros2-only  Build only the ROS 2 message mirrors
+  -j, --jobs N Number of parallel build jobs (default: tool-defined)
+  -h, --help   Show this help
 EOF
 }
 
@@ -35,7 +39,7 @@ while [[ "$#" -gt 0 ]]; do
         --ros2-only) build_ros1=false ;;
         -j|--jobs)
             if [[ "$#" -lt 2 ]]; then
-                echo "错误：选项 $1 需要一个数字参数" >&2
+                echo "Error: option $1 requires a numeric argument" >&2
                 usage >&2
                 exit 2
             fi
@@ -48,19 +52,20 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-if [[ -n "${JOBS}" ]] && ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
-    echo "错误：-j 参数必须是正整数，实际为：${JOBS}" >&2
+if [[ -n "${JOBS}" ]] && ! [[ "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: -j must be a positive integer; got: ${JOBS}" >&2
     exit 2
 fi
 
 if ! "${build_ros1}" && ! "${build_ros2}"; then
-    echo "错误：--ros1-only 与 --ros2-only 不能同时使用" >&2
+    echo "Error: --ros1-only and --ros2-only cannot be used together" >&2
     usage >&2
     exit 2
 fi
 
 reset_ros_environment() {
-    # 脚本在子进程内执行，清理这些变量不会污染调用者的终端。
+    # These changes affect only this script process, not the caller's shell.
+    # 这些修改只影响当前脚本进程，不会改变调用者的 shell 环境。
     unset ROS_DISTRO ROS_VERSION ROS_PYTHON_VERSION ROS_PACKAGE_PATH ROS_ROOT
     unset AMENT_PREFIX_PATH COLCON_PREFIX_PATH CMAKE_PREFIX_PATH
     unset PYTHONPATH LD_LIBRARY_PATH PKG_CONFIG_PATH
@@ -69,7 +74,7 @@ reset_ros_environment() {
 if "${build_ros1}"; then
     ROS1_SETUP="/opt/ros/${ROS1_DISTRO}/setup.bash"
     if [[ ! -f "${ROS1_SETUP}" ]]; then
-        echo "错误：未找到 ${ROS1_SETUP}，请安装 ROS1 ${ROS1_DISTRO}。" >&2
+        echo "Error: ${ROS1_SETUP} not found; install ROS 1 ${ROS1_DISTRO}." >&2
         exit 1
     fi
 
@@ -77,11 +82,11 @@ if "${build_ros1}"; then
     source "${ROS1_SETUP}"
 
     if ! command -v catkin >/dev/null 2>&1; then
-        echo "错误：未找到 catkin，请安装 python3-catkin-tools。" >&2
+        echo "Error: catkin not found; install python3-catkin-tools." >&2
         exit 1
     fi
 
-    echo "[ROS1] 构建工作区：${ROS1_WS}"
+    echo "[ROS1] Building workspace: ${ROS1_WS}"
     cd "${ROS1_WS}"
     if [[ ! -d .catkin_tools ]]; then
         catkin init
@@ -101,7 +106,7 @@ fi
 if "${build_ros2}"; then
     ROS2_SETUP="/opt/ros/${ROS2_DISTRO}/setup.bash"
     if [[ ! -f "${ROS2_SETUP}" ]]; then
-        echo "错误：未找到 ${ROS2_SETUP}，请安装 ROS2 ${ROS2_DISTRO}。" >&2
+        echo "Error: ${ROS2_SETUP} not found; install ROS 2 ${ROS2_DISTRO}." >&2
         exit 1
     fi
 
@@ -109,14 +114,16 @@ if "${build_ros2}"; then
     source "${ROS2_SETUP}"
 
     if ! command -v colcon >/dev/null 2>&1; then
-        echo "错误：未找到 colcon，请安装 python3-colcon-common-extensions。" >&2
+        echo "Error: colcon not found; install python3-colcon-common-extensions." >&2
         exit 1
     fi
 
-    echo "[ROS2] 构建消息镜像：${ROS2_WS}"
+    echo "[ROS2] Building message mirrors: ${ROS2_WS}"
     cd "${ROS2_WS}"
-    # colcon 本身没有 -j 参数（--parallel-workers 控制包级并行，此处仅一个包），
-    # 通过 MAKEFLAGS 限制其内部 make 的编译并行度。
+    # Only one package is selected, so use MAKEFLAGS to control its internal
+    # make parallelism instead of colcon's package-level --parallel-workers.
+    # 此处只构建一个包，因此使用 MAKEFLAGS 控制包内 make 的并行度，而不使用
+    # colcon 在包级生效的 --parallel-workers。
     if [[ -n "${JOBS}" ]]; then
         MAKEFLAGS="-j${JOBS}" colcon build \
             --symlink-install \
@@ -130,4 +137,4 @@ if "${build_ros2}"; then
     fi
 fi
 
-echo "DCL-SLAM 构建完成。"
+echo "DCL-SLAM build completed."

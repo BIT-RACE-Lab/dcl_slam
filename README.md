@@ -1,33 +1,37 @@
 # DCL-SLAM
 
-同时包含 ROS1 算法工作区和 ROS2 消息镜像工作区的分布式协同激光 SLAM 项目。ROS1 工作区包含 DCL-SLAM、DCL-FAST-LIO、Livox ROS Driver 2，以及 GTSAM、glog、libnabo 等构建依赖的完整源码；ROS2 工作区提供跨车 DDS 通信所需的消息镜像。
+<p align="center">
+  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-## 目录说明
+DCL-SLAM is a distributed collaborative LiDAR SLAM project that combines a ROS 1 algorithm workspace with a ROS 2 message-mirror workspace. The ROS 1 workspace contains DCL-SLAM, DCL-FAST-LIO, Livox ROS Driver 2, and the source code of build dependencies such as GTSAM, glog, and libnabo. The ROS 2 workspace provides mirrored custom messages for inter-robot communication over DDS.
 
-| 路径 | 说明 |
+## Repository Layout
+
+| Path | Description |
 | --- | --- |
-| `ros1_ws/src/DCL-SLAM` | 分布式协同 LiDAR SLAM、回环与可视化相关节点 |
-| `ros1_ws/src/DCL-FAST-LIO` | FAST-LIO 前端适配包 |
-| `ros1_ws/src/livox_ros_driver2` | Livox 激光雷达 ROS 驱动 |
-| `ros1_ws/src/distributed_mapper` | 分布式图优化与一致性筛选 |
-| `ros1_ws/src/*_catkin`、`ros1_ws/src/libnabo` | ROS1 构建所需的第三方依赖源码 |
-| `ros2_ws/src/dcl_slam_msgs` | DCL 自定义消息的 ROS2 镜像及 ros1_bridge 映射规则 |
-| `config/fastdds_wifi.xml` | 实车双机 Fast DDS 无线网卡白名单与固定节点发现配置 |
-| `scripts/build.sh` | 统一构建 ROS1 算法工作区和 ROS2 消息镜像 |
-| `scripts/build_ros1_bridge.sh` | 编译定制版 ros1_bridge（自定义消息或映射规则变更时执行） |
-| `scripts/run_robot.sh` | 一键启动单车 ROS master、DDS bridge、Livox 驱动和 DCL-SLAM |
+| `ros1_ws/src/DCL-SLAM` | Distributed collaborative LiDAR SLAM, loop closure, and visualization nodes |
+| `ros1_ws/src/DCL-FAST-LIO` | FAST-LIO front-end integration |
+| `ros1_ws/src/livox_ros_driver2` | Livox LiDAR ROS driver |
+| `ros1_ws/src/distributed_mapper` | Distributed pose-graph optimization and consistency filtering |
+| `ros1_ws/src/*_catkin`, `ros1_ws/src/libnabo` | Bundled third-party sources required to build the ROS 1 workspace |
+| `ros2_ws/src/dcl_slam_msgs` | ROS 2 mirrors of DCL custom messages and `ros1_bridge` mapping rules |
+| `config/fastdds_wifi.xml` | Fast DDS interface allowlist and static peer configuration for two physical robots |
+| `scripts/build.sh` | Builds the ROS 1 algorithm workspace and ROS 2 message mirrors |
+| `scripts/build_ros1_bridge.sh` | Builds the customized `ros1_bridge` after message or mapping changes |
+| `scripts/run_robot.sh` | Starts the local ROS master, DDS bridge, Livox driver, and DCL-SLAM for one robot |
 
-## 环境要求
+## Requirements
 
 - Ubuntu 20.04
 - ROS 1 Noetic
-- ROS 2 Foxy、`colcon`（只在使用 DDS 跨车传输时需要）
-- [ros1_bridge](https://github.com/BIT-Jiang-Group/ros1_bridge) 项目定制版（只在使用 ROS1/ROS2 bridge 时需要），请将它克隆到 `dcl_slam` 的同级目录
-- CMake、Git、`catkin_tools`
-- Boost、PCL、Eigen、OpenCV、Python 开发库
-- [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2)：需按官方说明单独安装。当前 ROS1 驱动会从 `/usr/local/lib` 查找 `liblivox_lidar_sdk_static.a`。
+- ROS 2 Foxy and `colcon` when DDS transport between robots is required
+- The project-specific [ros1_bridge](https://github.com/BIT-Jiang-Group/ros1_bridge) when ROS 1/ROS 2 bridging is required; clone it next to this repository
+- CMake, Git, and `catkin_tools`
+- Boost, PCL, Eigen, OpenCV, and Python development libraries
+- [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2), installed separately according to its upstream instructions. The bundled ROS 1 driver looks for `liblivox_lidar_sdk_static.a` in `/usr/local/lib`.
 
-安装常用构建依赖：
+Install the commonly required build packages:
 
 ```bash
 sudo apt update
@@ -35,123 +39,127 @@ sudo apt install cmake git python3-catkin-tools libboost-all-dev \
   libpcl-dev libeigen3-dev libopencv-dev python3-dev
 ```
 
-> ROS 的安装方式与系统版本相关，请先完成 [ROS Melodic](https://wiki.ros.org/melodic/Installation) 或 [ROS Noetic](https://wiki.ros.org/noetic/Installation) 安装。Livox-SDK2 不包含在本仓库内，必须在每台连接 MID360 的机器上单独安装。
+> Install [ROS Noetic](https://wiki.ros.org/noetic/Installation) and [ROS 2 Foxy](https://docs.ros.org/en/foxy/Installation.html) using the instructions for Ubuntu 20.04. Livox-SDK2 is not bundled with this repository and must be installed on every computer connected to a MID360.
 
-## 获取与构建
+## Clone and Build
 
-### 本体
+### DCL-SLAM
 
 ```bash
-git clone git@github.com:BIT-Jiang-Group/dcl_slam.git
+git clone https://github.com/BIT-Jiang-Group/dcl_slam.git
 cd dcl_slam
 ./scripts/build.sh
 ```
 
-脚本默认依次构建以下内容：
+By default, the script builds:
 
-- ROS1：`dcl_slam`、`dcl_fast_lio`、`livox_ros_driver2`；
-- ROS2：`dcl_slam_msgs`。
+- ROS 1 packages: `dcl_slam`, `dcl_fast_lio`, and `livox_ros_driver2`
+- ROS 2 package: `dcl_slam_msgs`
 
-ROS1 工作区使用 Release 模式和合并式 `devel` 空间。构建默认使用工具自带的并行度；如需限制或指定并行编译任务数（例如内存受限的机器），可在命令后加 `-j <数量>`：
+The ROS 1 workspace uses a merged `devel` space and a Release build. The build tools choose their default parallelism unless `-j` is specified:
 
 ```bash
 ./scripts/build.sh -j 4
 ./scripts/build.sh --ros1-only -j 2
 ```
 
-### ros1_bridge 依赖
+### Customized ros1_bridge
 
-系统安装的原版 `ros1_bridge` 不包含 DCL 自定义消息转换，也不包含本项目所需的参数化话题列表、`transient_local`/ROS1 latch 和双向回环抑制。请使用项目定制仓库，并让它与 `dcl_slam` 保持同级目录：
+The standard system installation of `ros1_bridge` does not include conversions for DCL custom messages. It also lacks the parameterized topic list, ROS 2 `transient_local` to ROS 1 latch handling, and bidirectional bridge-loop suppression used by this project. Use the customized repository and place it next to `dcl_slam`:
 
 ```text
 ├── dcl_slam/
 └── ros1_bridge/
 ```
 
-首次获取与构建（**要求`dcl_slam`以编译完成**）：
+Build it after DCL-SLAM so that both ROS 1 and ROS 2 custom messages are available:
 
 ```bash
 git clone https://github.com/BIT-Jiang-Group/ros1_bridge.git
 
 cd dcl_slam
-
-# ros1_bridge 必须在两边自定义消息环境都可见时编译
 ./scripts/build_ros1_bridge.sh
 ```
 
-`build_ros1_bridge.sh` 会自动加载 ROS1/ROS2 环境并执行 `colcon build`（`--symlink-install`、`--cmake-force-configure`、Release）。如需限制并行编译任务数，可加 `-j <数量>`：
+The script loads both message environments and runs a Release `colcon build` with `--symlink-install` and `--cmake-force-configure`. Limit build parallelism when needed:
 
 ```bash
 ./scripts/build_ros1_bridge.sh -j 4
 ```
 
-ros1_bridge 默认从 `dcl_slam` 的同级目录查找，也可以通过 `ROS1_BRIDGE_ROOT` 指定其它位置：
+By default, the script looks for `ros1_bridge` next to this repository. Override the location with `ROS1_BRIDGE_ROOT`:
 
 ```bash
 ROS1_BRIDGE_ROOT=/path/to/ros1_bridge ./scripts/build_ros1_bridge.sh
 ```
 
-只有在首次构建、修改 ROS1/ROS2 `.msg`、修改 `mapping_rules.yaml` 或更换 ROS 版本后，才需要重新编译 `ros1_bridge`。普通 DCL 算法、launch 或运行参数修改不需要重编 bridge。
+Rebuild the bridge after the first build, after changing ROS 1 or ROS 2 `.msg` files, after changing `mapping_rules.yaml`, or after switching ROS distributions. Changes limited to DCL algorithms, launch files, or runtime parameters do not require a bridge rebuild.
 
-构建完成后检查 DCL 转换是否已经生成：
+Verify that DCL message conversions were generated:
 
 ```bash
 source ../ros1_bridge/install/local_setup.bash
 ros2 run ros1_bridge dynamic_bridge --print-pairs | grep dcl_slam
 ```
 
-## 双车网络与 MID360 配置
+## Two-Robot Network and MID360 Setup
 
-两台车须能通过无线网络互相访问；每台车的 MID360 使用本机有线网卡通信。以下为示例地址：
+The two robot computers must be able to reach each other over Wi-Fi. Each MID360 communicates with its robot computer over a wired interface. The default configuration uses the following example addresses:
 
-| 车辆 | MID360 IP | 本机有线网卡 IP | 本机无线网卡 IP |
+| Robot | MID360 IP | Wired host IP | Wi-Fi host IP |
 | :---: | :---: | :---: | :---: |
-| 1 | `192.168.2.167` | `192.168.2.166` | `192.168.31.11` |
-| 2 | `192.168.2.167` | `192.168.2.166` | `192.168.31.12` |
+| a | `192.168.2.167` | `192.168.2.166` | `192.168.31.11` |
+| b | `192.168.2.167` | `192.168.2.166` | `192.168.31.12` |
 
-> 若两台 MID360 分别直连各自的车辆，它们处于独立的有线网段时可使用相同地址；若接入同一有线网络，必须改用不同的设备和主机 IP。
+> The MID360 and wired host addresses may be identical on both robots only when each sensor is directly connected to its own computer on an isolated wired network. Assign unique device and host addresses if both sensors share the same wired network.
 
-推荐每辆车运行独立 ROS1 Master，并通过 ROS1/ROS2 bridge 只转发 DCL 跨车消息。DCL 自带双车 bridge 参数配置；本车的点云、IMU、TF、地图和定位输出不会进入跨车网络。
+Run an independent ROS 1 master on each robot and use the ROS 1/ROS 2 bridge only for inter-robot DCL messages. The included two-robot bridge configuration keeps local point clouds, IMU data, TF, maps, and localization output off the inter-robot network.
 
-> 网络相关环境变量已写入启动脚本中
+The launch script exports the required ROS and DDS network variables. If you change the Wi-Fi addresses, update both the command-line arguments and `config/fastdds_wifi.xml`.
 
-## 实机运行
+## Run on Physical Robots
 
-### 一键启动（推荐）
+### One-command launch
 
-完成 DCL-SLAM 和 `ros1_bridge` 构建、MID360 以及 `fastdds_wifi.xml` 配置后，每辆车只需运行一个脚本。脚本会自动加载 ROS1/ROS2 环境，启动或复用本机 `roscore`，加载跨车话题列表，并按顺序启动 `parameter_bridge`、Livox 驱动和 DCL-SLAM。
+After building DCL-SLAM and `ros1_bridge` and configuring the MID360 and `fastdds_wifi.xml`, run one command on each robot. The script loads the ROS 1 and ROS 2 environments, starts or reuses a local `roscore`, loads the inter-robot topic list, and starts `parameter_bridge`, the Livox driver, and DCL-SLAM in order.
 
-**1 号车：**
+Robot a:
 
 ```bash
 cd ~/mtare/dcl_slam
 ./scripts/run_robot.sh a
 ```
 
-**2 号车：**
+Robot b:
 
 ```bash
 cd ~/mtare/dcl_slam
 ./scripts/run_robot.sh b
 ```
 
-默认无线地址分别为 `192.168.31.11` 和 `192.168.31.12`，ROS 2 Domain ID 为 `30`。地址不同时可在命令行覆盖：
+The default Wi-Fi addresses are `192.168.31.11` and `192.168.31.12`, and the default ROS 2 domain ID is `30`. Override them when required:
 
 ```bash
 ./scripts/run_robot.sh a --ros-ip 192.168.31.21 --domain-id 30
 ./scripts/run_robot.sh b --ros-ip 192.168.31.22 --domain-id 30
 ```
 
-此时也必须同步修改 `config/fastdds_wifi.xml` 中的网卡白名单和固定节点地址。按 `Ctrl-C` 会关闭脚本启动的 bridge、Livox 和 DCL-SLAM；如果脚本检测到 `roscore` 已经运行，则复用它且退出时不会关闭该 ROS master。`ros1_bridge` 默认从 `dcl_slam` 的同级目录查找，也可以通过 `ROS1_BRIDGE_ROOT` 指定其他位置：
+Update the interface allowlist and static peers in `config/fastdds_wifi.xml` whenever these addresses change. Press Ctrl-C to stop the bridge, Livox driver, and DCL-SLAM processes started by the script. If a local `roscore` is already available, the script reuses it and leaves it running when the script exits.
+
+Use a bridge checkout in another location by setting `ROS1_BRIDGE_ROOT`:
 
 ```bash
 ROS1_BRIDGE_ROOT=/path/to/ros1_bridge ./scripts/run_robot.sh a
 ```
 
-### 分终端启动
+### Component-level debugging
 
-由于项目同时包含`ros1`和`ros2`，环境变量较为复杂，建议通过对脚本的部分注释实现单独功能调试
+The combined ROS 1 and ROS 2 environment is sensitive to setup order. Use `scripts/run_robot.sh` as the reference for environment setup and process order when launching components in separate terminals. If component-level launches are needed frequently, add explicit script options such as `--skip-bridge` or `--skip-livox` instead of commenting out sections of the script.
 
-## 致谢
+## Citation and Acknowledgements
 
-DCL-SLAM 基于 DCL-SLAM、FAST-LIO2、LIO-SAM 和 DOOR-SLAM 等开源工作开展；各组件的许可证与引用信息以其源码目录内的说明文件为准。
+This repository builds on DCL-SLAM, FAST-LIO2, LIO-SAM, DOOR-SLAM, and other open-source projects. See [`ros1_ws/src/DCL-SLAM/README.md`](ros1_ws/src/DCL-SLAM/README.md) for the DCL-SLAM paper citation and upstream acknowledgements. Each bundled component remains subject to the license and attribution files in its own source directory; see [NOTICE](NOTICE) for repository-level attribution.
+
+## License
+
+The repository-level additions are available under the [Apache License 2.0](LICENSE). Bundled third-party components retain their original licenses; consult the license files in their respective source directories.
