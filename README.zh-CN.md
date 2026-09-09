@@ -6,6 +6,8 @@
 
 同时包含 ROS1 算法工作区和 ROS2 消息镜像工作区的分布式协同激光 SLAM 项目。ROS1 工作区包含 DCL-SLAM、DCL-FAST-LIO、Livox ROS Driver 2，以及 GTSAM、glog、libnabo 等构建依赖的完整源码；ROS2 工作区提供跨车 DDS 通信所需的消息镜像。
 
+> 目前仅完成对Livox MID-360的适配
+
 ## 目录说明
 
 | 路径 | 说明 |
@@ -117,7 +119,7 @@ ros2 run ros1_bridge dynamic_bridge --print-pairs | grep dcl_slam
 
 推荐每辆车运行独立 ROS1 Master，并通过 ROS1/ROS2 bridge 只转发 DCL 跨车消息。DCL 自带双车 bridge 参数配置；本车的点云、IMU、TF、地图和定位输出不会进入跨车网络。
 
-> 网络相关环境变量已写入启动脚本中
+> 网络相关环境变量已写入启动脚本中；若 MID360/有线网卡 IP 与实机不符，请修改 `ros1_ws/src/livox_ros_driver2/config/MID360_config.json` 中的 `ip`
 
 ## 实机运行
 

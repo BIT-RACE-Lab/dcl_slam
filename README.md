@@ -6,6 +6,8 @@
 
 DCL-SLAM is a distributed collaborative LiDAR SLAM project that combines a ROS 1 algorithm workspace with a ROS 2 message-mirror workspace. The ROS 1 workspace contains DCL-SLAM, DCL-FAST-LIO, Livox ROS Driver 2, and the source code of build dependencies such as GTSAM, glog, and libnabo. The ROS 2 workspace provides mirrored custom messages for inter-robot communication over DDS.
 
+> Only the Livox MID-360 is supported at this time.
+
 ## Repository Layout
 
 | Path | Description |
@@ -115,7 +117,7 @@ The two robot computers must be able to reach each other over Wi-Fi. Each MID360
 
 Run an independent ROS 1 master on each robot and use the ROS 1/ROS 2 bridge only for inter-robot DCL messages. The included two-robot bridge configuration keeps local point clouds, IMU data, TF, maps, and localization output off the inter-robot network.
 
-The launch script exports the required ROS and DDS network variables. If you change the Wi-Fi addresses, update both the command-line arguments and `config/fastdds_wifi.xml`.
+The launch script exports the required ROS and DDS network variables. If you change the Wi-Fi addresses, update both the command-line arguments and `config/fastdds_wifi.xml`. If the MID360/wired NIC IP does not match your actual setup, edit the `ip` entry in `ros1_ws/src/livox_ros_driver2/config/MID360_config.json`.
 
 ## Run on Physical Robots
 
