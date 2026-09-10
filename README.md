@@ -33,12 +33,11 @@ DCL-SLAM is a distributed collaborative LiDAR SLAM project that combines a ROS 1
 - Boost, PCL, Eigen, OpenCV, and Python development libraries
 - [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2), installed separately according to its upstream instructions. The bundled ROS 1 driver looks for `liblivox_lidar_sdk_static.a` in `/usr/local/lib`.
 
-Install the commonly required build packages:
+With the other requirements above already installed, install `catkin_tools`:
 
 ```bash
 sudo apt update
-sudo apt install cmake git python3-catkin-tools libboost-all-dev \
-  libpcl-dev libeigen3-dev libopencv-dev python3-dev
+sudo apt install python3-catkin-tools
 ```
 
 > Install [ROS Noetic](https://wiki.ros.org/noetic/Installation) and [ROS 2 Foxy](https://docs.ros.org/en/foxy/Installation.html) using the instructions for Ubuntu 20.04. Livox-SDK2 is not bundled with this repository and must be installed on every computer connected to a MID360.

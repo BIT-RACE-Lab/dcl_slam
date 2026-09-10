@@ -37,8 +37,7 @@
 
 ```bash
 sudo apt update
-sudo apt install cmake git python3-catkin-tools libboost-all-dev \
-  libpcl-dev libeigen3-dev libopencv-dev python3-dev
+sudo apt install python3-catkin-tools 
 ```
 
 > 请按 Ubuntu 20.04 对应的说明安装 [ROS Noetic](https://wiki.ros.org/noetic/Installation) 和 [ROS 2 Foxy](https://docs.ros.org/en/foxy/Installation.html)。Livox-SDK2 不包含在本仓库内，必须在每台连接 MID360 的机器上单独安装。
