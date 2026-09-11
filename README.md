@@ -28,7 +28,7 @@ DCL-SLAM is a distributed collaborative LiDAR SLAM project that combines a ROS 1
 - Ubuntu 20.04
 - ROS 1 Noetic
 - ROS 2 Foxy and `colcon` when DDS transport between robots is required
-- The project-specific [ros1_bridge](https://github.com/BIT-Jiang-Group/ros1_bridge) when ROS 1/ROS 2 bridging is required; clone it next to this repository
+- The project-specific [ros1_bridge](https://github.com/BIT-RACE-Lab/ros1_bridge) when ROS 1/ROS 2 bridging is required; clone it next to this repository
 - CMake, Git, and `catkin_tools`
 - Boost, PCL, Eigen, OpenCV, and Python development libraries
 - [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2), installed separately according to its upstream instructions. The bundled ROS 1 driver looks for `liblivox_lidar_sdk_static.a` in `/usr/local/lib`.
@@ -47,7 +47,7 @@ sudo apt install python3-catkin-tools
 ### DCL-SLAM
 
 ```bash
-git clone https://github.com/BIT-Jiang-Group/dcl_slam.git
+git clone https://github.com/BIT-RACE-Lab/dcl_slam.git
 cd dcl_slam
 ./scripts/build.sh
 ```
@@ -76,7 +76,7 @@ The standard system installation of `ros1_bridge` does not include conversions f
 Build it after DCL-SLAM so that both ROS 1 and ROS 2 custom messages are available:
 
 ```bash
-git clone https://github.com/BIT-Jiang-Group/ros1_bridge.git
+git clone https://github.com/BIT-RACE-Lab/ros1_bridge.git
 
 cd dcl_slam
 ./scripts/build_ros1_bridge.sh

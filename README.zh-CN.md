@@ -28,7 +28,7 @@
 - Ubuntu 20.04
 - ROS 1 Noetic
 - ROS 2 Foxy、`colcon`（仅在使用 DDS 跨车传输时需要）
-- [ros1_bridge](https://github.com/BIT-Jiang-Group/ros1_bridge) 项目定制版（仅在使用 ROS 1/ROS 2 bridge 时需要），请将它克隆到 `dcl_slam` 的同级目录
+- [ros1_bridge](https://github.com/BIT-RACE-Lab/ros1_bridge) 项目定制版（仅在使用 ROS 1/ROS 2 bridge 时需要），请将它克隆到 `dcl_slam` 的同级目录
 - CMake、Git、`catkin_tools`
 - Boost、PCL、Eigen、OpenCV、Python 开发库
 - [Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2)：需按官方说明单独安装。当前 ROS1 驱动会从 `/usr/local/lib` 查找 `liblivox_lidar_sdk_static.a`。
@@ -47,7 +47,7 @@ sudo apt install python3-catkin-tools
 ### 本体
 
 ```bash
-git clone https://github.com/BIT-Jiang-Group/dcl_slam.git
+git clone https://github.com/BIT-RACE-Lab/dcl_slam.git
 cd dcl_slam
 ./scripts/build.sh
 ```
@@ -76,7 +76,7 @@ ROS1 工作区使用 Release 模式和合并式 `devel` 空间。构建默认使
 首次获取与构建（要求 `dcl_slam` 已编译完成）：
 
 ```bash
-git clone https://github.com/BIT-Jiang-Group/ros1_bridge.git
+git clone https://github.com/BIT-RACE-Lab/ros1_bridge.git
 
 cd dcl_slam
 
