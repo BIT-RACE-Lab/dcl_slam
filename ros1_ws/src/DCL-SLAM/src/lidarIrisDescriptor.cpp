@@ -161,11 +161,17 @@ inline cv::Mat lidar_iris_descriptor::circRowShift(
 	const cv::Mat &src,
 	int shift_m_rows)
 {
-	if(shift_m_rows == 0)
+	if(src.empty())
 	{
 		return src.clone();
 	}
 	shift_m_rows %= src.rows;
+	// A full-period shift is also a no-op. Avoid copying an empty source
+	// into a temporary ROI, whose fixed-size output cannot be released.
+	if(shift_m_rows == 0)
+	{
+		return src.clone();
+	}
 	int m = shift_m_rows > 0 ? shift_m_rows : src.rows + shift_m_rows;
 	cv::Mat dst(src.size(), src.type());
 	src(cv::Range(src.rows - m, src.rows), cv::Range::all()).copyTo(dst(cv::Range(0, m), cv::Range::all()));
@@ -177,11 +183,17 @@ inline cv::Mat lidar_iris_descriptor::circColShift(
 	const cv::Mat &src,
 	int shift_n_cols)
 {
-	if(shift_n_cols == 0)
+	if(src.empty())
 	{
 		return src.clone();
 	}
 	shift_n_cols %= src.cols;
+	// Hamming refinement can request 360 columns on a 360-column image.
+	// Check after modulo so positive and negative full turns are no-ops.
+	if(shift_n_cols == 0)
+	{
+		return src.clone();
+	}
 	int n = shift_n_cols > 0 ? shift_n_cols : src.cols + shift_n_cols;
 	cv::Mat dst(src.size(), src.type());
 	src(cv::Range::all(), cv::Range(src.cols - n, src.cols)).copyTo(dst(cv::Range::all(), cv::Range(0, n)));
